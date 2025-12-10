@@ -1,0 +1,398 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TicTacToe.Deluxe</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+    :root{
+      --bg:#0f0f12;
+      --panel:#1a1a1f;
+      --text:#e5e5e5;
+      --brand:#2563eb;
+      --brand-dark:#1d4ed8;
+      --accent:#00ffaa;
+      --border:#2f2f36;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background: var(--panel);
+      color: #fff;
+      padding: 2rem;
+      text-align: center;
+      border-bottom: 2px solid var(--brand);
+    }
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 1.5rem;
+    }
+    section {
+      background: var(--panel);
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      text-align:center;
+      border: 1px solid var(--border);
+    }
+    h1, h2, p {
+      margin: 0 0 1rem;
+    }
+    canvas {
+      background: var(--bg) !important;
+      border-radius:8px;
+      display:block;
+      margin:1rem auto 0;
+      border:2px solid var(--brand);
+      touch-action: manipulation;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: var(--brand-dark);
+    }
+    #winnerMsg {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--accent);
+      min-height: 1.6rem;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      margin-top: 2rem;
+      color: #777;
+      font-size: 0.9rem;
+    }
+
+    .name-panel {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      max-width: 380px;
+      margin: 0.5rem auto 1rem;
+      background: #141419;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: left;
+    }
+    .name-panel h3{
+      margin:0 0 0.25rem;
+      font-weight:600;
+    }
+    .field {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    label {
+      font-size: 0.95rem;
+      color:#cfd3dc;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f0f12;
+      color: var(--text);
+      outline: none;
+    }
+    .panel-actions {
+      display:flex;
+      gap:0.5rem;
+      justify-content:flex-end;
+      margin-top:0.25rem;
+    }
+    .hint {
+      font-size: 0.85rem;
+      color:#9fa6b2;
+      margin-top:0.25rem;
+    }
+
+    .turn-tag {
+      display:inline-block;
+      margin-top:0.5rem;
+      padding:0.25rem 0.6rem;
+      border-radius:999px;
+      background:#0f172a;
+      border:1px solid var(--border);
+      color:#cbd5e1;
+      font-size:0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TicTacToe.Deluxe</h1>
+  </header>
+
+  <main>
+    <section id="game">
+      <h2>Tic Tac Toe</h2>
+      <p>Click a square to play.</p>
+
+      <div class="name-panel" id="namePanel">
+        <h3>Player Names</h3>
+        <div class="field">
+          <label for="nameX">Player X:</label>
+          <input id="nameX" type="text" placeholder="e.g., Alice" />
+        </div>
+        <div class="field">
+          <label for="nameO">Player O:</label>
+          <input id="nameO" type="text" placeholder="e.g., Bob" />
+        </div>
+        <div class="panel-actions">
+          <button id="startBtn">Start Game</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+        <div class="hint">Hint: First, each player places 3 pieces. After that, you move your pieces.</div>
+      </div>
+
+      <div class="turn-tag" id="turnTag">Turn: X</div>
+      <canvas id="gameCanvas" width="300" height="300"></canvas>
+      <div id="winnerMsg"></div>
+    </section>
+  </main>
+
+  <footer>
+    © 2025 TicTacToe.Deluxe | Made by CPStudios
+  </footer>
+
+<script>
+  // (JavaScript remains the same as previous version)
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const size = 300;
+  const cell = size / 3;
+
+  let board = ["", "", "", "", "", "", "", "", ""];
+  let current = "X";
+  let selected = null;
+  let piecesPlaced = { X: 0, O: 0 };
+  let playerNames = { X: "Player X", O: "Player O" };
+
+  let isAnimating = false;
+  let gameOver = false;
+
+  const turnTag = document.getElementById('turnTag');
+  const winnerMsg = document.getElementById('winnerMsg');
+
+  function updateTurnTag() {
+    if (gameOver) {
+      turnTag.textContent = "Game over";
+    } else {
+      turnTag.textContent = `Turn: ${current}`;
+    }
+  }
+
+  function resetGame() {
+    board = ["", "", "", "", "", "", "", "", ""];
+    current = "X";
+    selected = null;
+    piecesPlaced = { X: 0, O: 0 };
+    isAnimating = false;
+    gameOver = false;
+    winnerMsg.textContent = "";
+    updateTurnTag();
+    drawBoard();
+  }
+
+  function drawBoard() {
+    ctx.clearRect(0,0,size,size);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#2563eb';
+
+    ctx.beginPath();
+    ctx.moveTo(cell, 0); ctx.lineTo(cell, size);
+    ctx.moveTo(cell*2, 0); ctx.lineTo(cell*2, size);
+    ctx.moveTo(0, cell); ctx.lineTo(size, cell);
+    ctx.moveTo(0, cell*2); ctx.lineTo(size, cell*2);
+    ctx.stroke();
+
+    ctx.font = '80px Poppins';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (let i = 0; i < 9; i++) {
+      const x = (i % 3) * cell + cell / 2;
+      const y = Math.floor(i / 3) * cell + cell / 2;
+      ctx.fillStyle = '#ffffff';
+      if (board[i]) {
+        ctx.fillText(board[i], x, y + 5);
+      }
+    }
+
+    if (selected !== null) {
+      const x = (selected % 3) * cell;
+      const y = Math.floor(selected / 3) * cell;
+      ctx.strokeStyle = '#00ffaa';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(x + 4, y + 4, cell - 8, cell - 8);
+    }
+  }
+
+  function checkWinner() {
+    const wins = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+    for (let w of wins) {
+      if (board[w[0]] && board[w[0]] === board[w[1]] && board[w[1]] === board[w[2]]) {
+        return board[w[0]];
+      }
+    }
+    return null;
+  }
+
+  function endIfWinner() {
+    const winner = checkWinner();
+    if (winner) {
+      winnerMsg.textContent = `${playerNames[winner]} wins!`;
+      gameOver = true;
+      updateTurnTag();
+      return true;
+    }
+    return false;
+  }
+
+  function animatePlace(index, symbol) {
+    isAnimating = true;
+    let progress = 0;
+
+    function step() {
+      drawBoard();
+      const x = (index % 3) * cell + cell / 2;
+      const y = Math.floor(index / 3) * cell + cell / 2;
+
+      ctx.save();
+      ctx.globalAlpha = Math.min(progress, 1);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '80px Poppins';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(symbol, x, y + 5);
+      ctx.restore();
+
+      progress += 0.08;
+      if (progress <= 1) {
+        requestAnimationFrame(step);
+      } else {
+        board[index] = symbol;
+        piecesPlaced[symbol]++;
+        isAnimating = false;
+
+        if (!endIfWinner()) {
+          current = current === 'X' ? 'O' : 'X';
+          updateTurnTag();
+          drawBoard();
+        }
+      }
+    }
+    step();
+  }
+
+  function animateMove(from, to, symbol) {
+    isAnimating = true;
+    const fromX = (from % 3) * cell + cell / 2;
+    const fromY = Math.floor(from / 3) * cell + cell / 2;
+    const toX = (to % 3) * cell + cell / 2;
+    const toY = Math.floor(to / 3) * cell + cell / 2;
+
+    let progress = 0;
+    function step() {
+      drawBoard();
+      ctx.fillStyle = '#ffffff';
+      const x = fromX + (toX - fromX) * progress;
+      const y = fromY + (toY - fromY) * progress;
+      ctx.fillText(symbol, x, y + 5);
+
+      progress += 0.1;
+      if (progress <= 1) {
+        requestAnimationFrame(step);
+      } else {
+        board[to] = symbol;
+        board[from] = "";
+        selected = null;
+        isAnimating = false;
+
+        if (!endIfWinner()) {
+          current = current === 'X' ? 'O' : 'X';
+          updateTurnTag();
+          drawBoard();
+        }
+      }
+    }
+    step();
+  }
+
+  canvas.addEventListener('click', e => {
+    if (isAnimating || gameOver) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const index = Math.floor(y / cell) * 3 + Math.floor(x / cell);
+
+    if (piecesPlaced[current] < 3) {
+      if (!board[index]) {
+        animatePlace(index, current);
+      }
+    } else {
+      if (selected === null) {
+        if (board[index] === current) {
+          selected = index;
+          drawBoard();
+        }
+      } else {
+        if (!board[index]) {
+          animateMove(selected, index, current);
+        } else {
+          selected = null;
+          drawBoard();
+        }
+      }
+    }
+  });
+
+  document.getElementById('startBtn').addEventListener('click', () => {
+    const nameX = (document.getElementById('nameX').value || "").trim();
+    const nameO = (document.getElementById('nameO').value || "").trim();
+
+    playerNames.X = nameX || "Player X";
+    playerNames.O = nameO || "Player O";
+
+    resetGame();
+    canvas.focus();
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+  updateTurnTag();
+  drawBoard();
+</script>
+
+</body>
+</html>
